@@ -1,0 +1,27 @@
+## 1. Your question
+
+1. What environmental question are you curious about? State it in one sentence.
+2. Why does this question matter, and to whom? Who would make a different decision depending on the answer?
+3. What do you already know about this topic? Name at least one source (e.g., a paper, report, or news article) that gives context for your question.
+4. What is your **response** variable? What is the main **explanatory** variable you think influences it?
+
+## 2. Your data
+
+1. What dataset(s) will you use to answer your question? Provide the source and a link.
+2. Who collected these data, how, and why? How might the way the data were collected affect what you can learn from them?
+3. What does one row in your data represent (e.g., one site, one year, one sample)? How many rows are there?
+4. Download the data and read it into R. Include the code for cleaning your data, or joining it if you have multiple sources.
+
+## 3. Numerical summaries
+
+1. Summarize your response and explanatory variables numerically (e.g., mean, median, standard deviation, range, counts per category).
+2. How much data is missing? Is the missingness concentrated in particular places, times, or groups? What might cause it?
+3. Are there any values that seem implausible or surprising?
+
+## 4. Graphical summaries
+
+1. Visualize the **distribution** of your response variable. Describe its shape (e.g., symmetric, skewed, bounded by zero).
+2. Visualize the **relationship** between your response and explanatory variables. Describe what you see.
+3. Make at least one more figure that shows something about your data you think is important (e.g., variation over space or time, differences between groups, a potential confounding variable).
+
+Every figure should have informative axis labels with units and a caption explaining what it shows.
