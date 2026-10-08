@@ -8,7 +8,14 @@
 ## 2. Your data
 
 1. What dataset(s) will you use to answer your question? Provide the source and a link.
+- For avalanche data I will be using [Colorado Avalance Information Center](https://avalanche.state.co.us/accidents/statistics-and-reporting) publicly available avalance incident data.
+- For El Nino data, I will be using [Niño 3.4 SST Index from the HadISST1.1](https://psl.noaa.gov/data/timeseries/month/DS/Nino34/). I will be looking at the sea surface temperature anomaly in the Nino 3.4 region.
+
 2. Who collected these data, how, and why? How might the way the data were collected affect what you can learn from them?
+
+- For the avalanche data, all of the incident data are reports. The data comes from all around the country and from several sources. Data is reported this way because indiviuals caught in an avalance report their incidents for future safety, and rescue teams who report this data do so to keep a record of incidents in their area. A lot of the time there are avalanche fatalities that dont got reported because there were no survivors and people were far in the backcountry-- especially in earlier years when SOS technolgy was less advanced. This may cause underreporting of hazardous conditions.\ 
+- The ONI data is a collection of several sources such as boat thermisters, CTD buoys, and satelite derived data. Because the data is coming from several different sources over a long period of time, there may be inconsistencies in the data. Thermal remote sensing has come a long way since the 70s. The anomaly is a harmonic composition of these different data sources, which varies with season.\ 
+
 3. What does one row in your data represent (e.g., one site, one year, one sample)? How many rows are there?
 4. Download the data and read it into R. Include the code for cleaning your data, or joining it if you have multiple sources.
 
