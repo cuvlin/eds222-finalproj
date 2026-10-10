@@ -1,9 +1,16 @@
 ## 1. Your question
 
 1. What environmental question are you curious about? State it in one sentence.
+- Is the amount of avalanche related fatalities in California positively correlates with El Nino cycles of ENSO?\ 
+
 2. Why does this question matter, and to whom? Who would make a different decision depending on the answer?
+This question matters a lot. Last year Mammoth Mountain was not prepared for the amount of snowfall that they received, and it costed them the lives of several ski patrolers, skiers, and millions of dollars. It was a La Nina phase-- notorious for less snowfall than an El Nino phase. THis year is the strongest El Nino of all time, which may lead to several casualties if not aptly prepared. The average skier may not want to ski with a greater risk of avalanche fatalities, whereas a resort owner may increase their survailanece and field testing due to this data.\ 
+
 3. What do you already know about this topic? Name at least one source (e.g., a paper, report, or news article) that gives context for your question.
-4. What is your **response** variable? What is the main **explanatory** variable you think influences it?
+[This article](https://abc7news.com/post/final-report-deadly-castle-peak-avalanche-lake-tahoe-details-snow-conditions-movements-9-victims/18832449/) talks about the scieence behind how snow droughts cause worse snowpack when storms finally arrive. As a geographer, I am aware of current ENSO conditions and am familiar with what that means in terms of snowpac. LA a Nina brought a snow drought for most of America, but this years record breaking El Nino will break that drought-- and lead to dangerous snowpack.\ 
+
+4. What is your **response** variable? What is the main **explanatory** variable you think influences it?\ 
+The response variable is avalanche incidents ending in fatalities. They are caused by bad snowpack (among other avoidable factors), which are a direct consequence of ENSO storm regimes.\ 
 
 ## 2. Your data
 
