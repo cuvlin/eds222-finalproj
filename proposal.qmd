@@ -1,0 +1,97 @@
+## 1. Your question and data
+
+1.  State your question in one sentence. If it changed since your exploratory analysis, briefly explain how and why.
+
+- Is the amount of avalanche related fatalities in America positively correlated with El Nino cycles of ENSO? I changed the scope of my question from the exploratory data analysis because the amount of avalanche incident data I had for *just* California was too little. I changed the scope to all of America so that I can take advantage of the whole dataset.
+
+2.  In one paragraph, give the context for your question: why it matters, to whom, and what is already known about it. Cite at least **two sources** (these can be scientific literature, news articles, government reports, or any other reputable source).
+
+- The mountains are one of the most volatile environemts people take leisure in. Being inside of a ski resort gives people a false sense of security from snow storms-- especially avalanches. Last year, two das before I went skiin in mammoth, a renowned ski patroller died while in bounds. [Incident Report](https://www.mammothmountain.com/discover-mammoth/mammoth-blog/operations-update-dec-26). This was very crazy because it was a notoriously slow year for snow-- a stong La Nina. As we swing into a winter dominated by one of the strongest El Nino phases of the modern day, I cant help but be concerned for the risk of avalanche danger due to increased avalanches [(NOAA 2026)](https://www.noaa.gov/understanding-el-nino). Thousands, maybe even millions, of people who have this false sense of security are at extreme risk, and it is very important that this information is very clearly expressed.
+
+3.  Describe your data in a few sentences: the source, who collected it and how, what one row represents, and the response variable you're most interested in.
+
+- For the avalanche data, all of the incident data are reports. The data comes from all around the country and from several sources. Data is reported this way because indiviuals caught in an avalance report their incidents for future safety, and rescue teams who report this data do so to keep a record of incidents in their area. A lot of the time there are avalanche fatalities that dont got reported because there were no survivors and people were far in the backcountry-- especially in earlier years when SOS technolgy was less advanced. This may cause underreporting of hazardous conditions. 
+- The ONI data is a collection of several sources such as boat thermisters, CTD buoys, and satelite derived data. Because the data is coming from several different sources over a long period of time, there may be inconsistencies in the data. Thermal remote sensing has come a long way since the 70s. The anomaly is a harmonic composition of these different data sources, which varies with season. 
+- The response variable that we are most interested are acalanche related fatalities-- the response we are most trying to avoid.
+
+4.  Include the one figure from your exploratory analysis (or create a new one) that best shows the relationship between your response and explanatory variables.
+
+```{r}
+# Read in libraries
+library(tidyverse)
+library(here)
+library(readxl)
+
+# Read in data and do basic cleaning
+avalanche_CA_data <- read_excel(here("eds-222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
+    filter(State == 'CA') 
+
+nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv"))
+colnames(nino_data) <- c("date", "sst_anomaly")
+
+
+avy_year <- avalanche_CA_data |> 
+    summarize(year_count = sum(Killed), .by = YYYY) |> 
+    rename(year = YYYY)
+chart2_df <- nino_data |> 
+    mutate(year = year(date)) |> 
+    summarize(mean_sst = mean(sst_anomaly), .by = year) |> 
+    inner_join(avy_year, by = join_by(year)) |> 
+    ggplot(
+        mapping = aes(
+            x=year
+        )
+    ) +
+        geom_line(aes(y = mean_sst, color = 'blue')) +
+        geom_line(aes(y = year_count, color = 'red')) + 
+            labs(
+            x= 'Year',
+            y = 'Mean sst and Avalanche Fatalities Trend',
+            title = "California Avalanche Incident vs Mean sst Over Time",
+            color = "Legend Color"
+        )  +
+        scale_color_discrete(labels = c("blue" = "Mean SST Anomaly (celsius)", 
+                                "red" = "Fatality Count"))
+
+        chart2_df
+```
+
+## 2. Causal relationships
+
+1.  Draw a directed acyclic graph (DAG) of the causal relationships you think connect your explanatory variable to your response. Include at least one other variable that affects your response, and at least one potential **confounder** (a variable that affects both your explanatory and response variables). You may draw it by hand and include a photo, or use a tool like `mermaid` (see below).
+
+    ![DAG Image]('/home/calvinfu/eds222/eds-222-hw2/eds-222-hw2%20DAG.jpg')
+
+<!-- -->
+
+2.  Explain each arrow in your DAG in one sentence. Why do you think that causal relationship exists?
+
+- Nino to storm frequency: Increased El Niño intensity increases the storm frequency in the storm track (warmer water)
+- Storm frequency to snow depth and pack: Increased storm frequency bring more snow to the mountains increasing depth and altering snow pack patterns
+- Snow depth and pack to avalanche incident freqency: Increased snow depth along with looser pack during recent storms increases the amount of avalanches in the mountains.
+- Topographical relief to snow depth & pack, and avalanche incident frequency. Increased topographical relief creates unstable snow pack and reduces snow depth. Increased topographical releif also increases avalanche incident frequency due to skiers having a higher chance of causing an avalanche when on this terrain.
+- Lattitude to El Nino intensity and avalanche incident frequency: El nino shifts the storm track to lower lattitudes meaning its effects are more or less intense depending on the latitude. There are far more mountains in americas higher latitudes, meaning more resorts and backcountry where people can be involved in avalanche incidents.
+
+3.  Which variables in your DAG are in your data? Which are not? How might the missing variables bias your results?
+
+- The variables that are within the data (right now) are El Nino intensity (nino 3.4 sst), lattitude, and avalanche incident frequency. The mediator variables, such as storm frequency and snowpack & depth are not included in the datasets. Additionally, topographical relief is not included in the dataset, which is a confounder variable. The missing mediator variables may add bias to the data because they are both affected by other variables not accounted for in the data (including ou confounder variable).
+
+## 3. Modeling considerations
+
+1.  Describe which variables you intend to include as predictors, and explain why you will use them in your model. Use your DAG to justify which variables you include and which you leave out.
+
+- The variables that I currently intend to include as predictors are both El Nino intensity and snow depth. The El nino is the main predictor because that is the variable whos relationship this project is looking at. Im adding snow pack as a predictor variable because it is a mediator variable that has a confounder variable that affects it and the repsonse variable-- I belive it would lead to bias if I left this one out. See that topography affects both snow depth and avalance incident rate.
+
+2.  What is the *type* of your response variable? Is it continuous or discrete? If it's continuous, is it bounded on the lower or upper end, like a strictly positive variable (0, Inf) or a proportion (0, 1)? If it's discrete, is it counts or categories? The *type* of your response variable will guide your modeling choices later, after we cover generalized linear models.
+
+- The variable type of my repsonse variable is discrete. The amount of avalanche incidents is a count, a therefore can only take integer values and not decimal values. However, if I were to convert the avalance incidents into some sort of rate (percentage) it would be continuous with lower bound of 0 and upper bound of 100.
+
+3.  State your *scientific* hypothesis in plain language. Then state the *statistical* null and alternative hypotheses in terms of a specific predictor variable's coefficient in your model.
+
+- My scientific hypothesis: Stronger El Nino cycles cause more frequent storms in America which leads to increased avalanche incidents
+- H_0: There is no relationship between El Nino severity and avalanche incident related fatalities in America
+- H_A: There is a positive relationship between El Nino severity and avalanche incident related fatalities in America
+
+## 4. Questions for feedback
+
+What part of your analysis are you least sure about? What specific feedback would help you most? I think that I am least sure about my DAG representation. I would like some feedback to see if it actually makes sense.

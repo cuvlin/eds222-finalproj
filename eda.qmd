@@ -24,18 +24,144 @@ The response variable is avalanche incidents ending in fatalities. They are caus
 - The ONI data is a collection of several sources such as boat thermisters, CTD buoys, and satelite derived data. Because the data is coming from several different sources over a long period of time, there may be inconsistencies in the data. Thermal remote sensing has come a long way since the 70s. The anomaly is a harmonic composition of these different data sources, which varies with season.\ 
 
 3. What does one row in your data represent (e.g., one site, one year, one sample)? How many rows are there?
+- For the avalanche center data, one row in the data represents one reported avalanche incident and all of its related information. One row essentially represents one incident report.\ 
+- For the el nino data, one row represents the sea surface temperature anomaly for the first day of that month in the nino 3.4 region.
+
 4. Download the data and read it into R. Include the code for cleaning your data, or joining it if you have multiple sources.
+```{r}
+# Read in libraries
+library(tidyverse)
+library(here)
+library(readxl)
+
+# Read in data and do basic cleaning
+avalanche_CA_data <- read_excel(here("eds222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
+    filter(State == 'CA') 
+
+nino_data <- read_csv(here("eds222-finalproj", "data", "nino34.long.anom.csv"))
+colnames(nino_data) <- c("date", "sst_anomaly")
+
+avalanche_CA_data |> head(1)
+nino_data |> head(1)
+```
 
 ## 3. Numerical summaries
 
 1. Summarize your response and explanatory variables numerically (e.g., mean, median, standard deviation, range, counts per category).
+```{r}
+# Response variable summary
+print(avalanche_CA_data |> summary())
+# Explanatory variable summary
+print(nino_data |> summary())
+```
+
 2. How much data is missing? Is the missingness concentrated in particular places, times, or groups? What might cause it?
+```{r}
+# Missing data check for both variables
+print(avalanche_CA_data$location |> is.na() |> sum())
+
+print(nino_data$sst_anomaly |> is.na() |> sum())
+```
+- There is no missing data. This makese sense given that they are reports and must be filled out completely.
+
 3. Are there any values that seem implausible or surprising?
 
+```{r}
+# Checking the el nino dataset
+nino_data$sst_anomaly |> max()
+nino_data$sst_anomaly |> min() 
+```
+- The only implausible data value is in the el nino dataset. THe minimum sst_anomaly value is -9999. THis would mean the mean sea surface temperature for that region in that month was 9999 degrees celsius lower than usual. Likely this is just how they store NA values. We will need to clean this.
+
+
 ## 4. Graphical summaries
+- We need to clean the data a little bit more before we can start plotting, because the -9999 values will throw off our graph scale.
+```{r}
+nino_data$sst_anomaly[nino_data$sst_anomaly == -9999] <- NA
+nino_data$sst_anomaly |>  is.na() |> sum()
+```
 
 1. Visualize the **distribution** of your response variable. Describe its shape (e.g., symmetric, skewed, bounded by zero).
+- Visualizse the temporal distribution of avalanches in California via the database
+```{r}
+avalanche_CA_data |> 
+    ggplot(
+        mapping = aes(
+            x=Date,
+            y=Killed
+            
+        )
+    ) +
+    geom_line() +
+    labs(
+        x='Date of Incident',
+        y='Number of Fatalities',
+        title='California Avalanche Incident Distribution Time Series'
+    ) +
+        theme_classic()
+```
+This chart shows the annual distribution of California avalanches *from this database* on a decadal scale. It is clear that around 1980 had the mos t
 2. Visualize the **relationship** between your response and explanatory variables. Describe what you see.
+
+```{r}
+avy_year <- avalanche_CA_data |> 
+    summarize(year_count = sum(Killed), .by = YYYY) |> 
+    rename(year = YYYY)
+chart2_df <- nino_data |> 
+    mutate(year = year(date)) |> 
+    summarize(mean_sst = mean(sst_anomaly), .by = year) |> 
+    inner_join(avy_year, by = join_by(year)) |> 
+    ggplot(
+        mapping = aes(
+            x=year
+        )
+    ) +
+        geom_line(aes(y = mean_sst, color = 'blue')) +
+        geom_line(aes(y = year_count, color = 'red')) + 
+            labs(
+            x= 'Year',
+            y = 'Mean sst and Avalanche Fatalities Trend',
+            title = "California Avalanche Incident vs Mean sst Over Time",
+            color = "Legend Color"
+        )  +
+        scale_color_discrete(labels = c("blue" = "Mean SST Anomaly (celsius)", 
+                                  "red" = "Fatality Count"))
+
+        chart2_df
+``` 
+The relatioship between avalanche fatalies ad mean sea surface temperature anomaly is displayed on the chart in a decadal scale. Around 1980 there are peaks in both graphs, hinting at the idea that there may be a relationship between these two variables.
+
 3. Make at least one more figure that shows something about your data you think is important (e.g., variation over space or time, differences between groups, a potential confounding variable).
 
 Every figure should have informative axis labels with units and a caption explaining what it shows.
+
+I am going to repeat the same analysis as seen above, however I am going to change the data so that it displays aalanche incidents that happened in Colorado. I want to see if a similar relationship can be obsevred. El Nino affects the weather pattersns much differently in Colorado as supposed to the Sierras.
+```{r}
+avalanche_CO_data <- read_excel(here("eds222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
+    filter(State == 'CO')
+avy_year_CO <- avalanche_CO_data |> 
+    summarize(year_count = sum(Killed), .by = YYYY) |> 
+    rename(year = YYYY)
+chart2_df <- nino_data |> 
+    mutate(year = year(date)) |> 
+    summarize(mean_sst = mean(sst_anomaly), .by = year) |> 
+    inner_join(avy_year_CO, by = join_by(year)) |> 
+    ggplot(
+        mapping = aes(
+            x=year
+        )
+    ) +
+        geom_line(aes(y = mean_sst, color = 'blue')) +
+        geom_line(aes(y = year_count, color = 'red')) + 
+            labs(
+            x= 'Year',
+            y = 'Mean sst and Avalanche Fatalities Trend',
+            title = "Colorado Avalanche Incident vs Mean sst Over Time",
+            color = "Legend Color"
+        )  +
+        scale_color_discrete(labels = c("blue" = "Mean SST Anomaly (celsius)", 
+                                  "red" = "Fatality Count"))
+
+        chart2_df
+```
+A different trend is observed in this data. As the years pass there seems to be an upward, decadal, trend in avalanche fatalities. Further analysis about this relationship would have to be completed in order to discern whether or not this trend is statistically significant.
