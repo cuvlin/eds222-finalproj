@@ -1,14 +1,21 @@
-# Header
+# Held Under: Is El Niño Causing Increased Avalanche Incidents in America?
+
+Author: [Calvin Fu](https://github.com/cuvlin)
+
+Date: December 11, 2026
+
+Course: EDS 222: Statistics for Environmental Data Science
 
 ## Introduction:
 
 include background details and motivation
 
-## Question: 
+## Question:
 
 include your question, and how other variables play into the main relationship
 
 ## Data:
+
 Information on all the variables:
 
 | Variable | Predictor or Response | Data Type | Discrete or Continuous | Values/Units |
@@ -16,38 +23,55 @@ Information on all the variables:
 | Fatal Avalanche Incidents | Response | integer | discrete | \[0, 1, 2, ...\] |
 | EL Nino Phase | Predictor | categorical | discrete | \["nino", "int", "nina"\] |
 | Average Snowfall | Predictor | double | continuous | xx.xx inches |
-| State | Predictor | categorical | discrete | \["CA","CO","NM"\] |
+| State | Predictor | Informational | discrete | \["CA","CO","NM"\] |
 | Visit Frequency | Predictor | categorical | discrete | \["High", "Low"\] |
 
-- Fatal Avalanche Incidents: This is our response variable. It is a count of how many incidents occurred in that year. Because it is a count, it is only integers, and it approximates a Poisson distribution.
-- El Niño Phase: This is our primary predictor. It is
-- Average Snowfall:
-- State:
-- Visit Frequency:
+- **Fatal Avalanche Incidents:** This is our response variable. It is a count of how many incidents occurred in that year. Because it is a count, it is only integers, and it approximates a Poisson distribution.
+- **ENSO Phase:** This is our primary predictor, and it is categorical. For our intents and purposes, we classify each year as either "La Nina", "Intermittent", or "El Nino" based on the Niño 3.4 Sea Surface Temperature Anomaly (SSTA) data. We determine the phase by taking the yearly average SSTA and classifying it based on that. This variable was chosen because it is our main predictor.
+- **Average Snowfall:** This is our only continuous predictor. It is a yearly average of snowfall for the state that we calculate based on snowfall averages at one weather station per state. Snowfall ebbs and flows just as much as the ENSO phase does. This is an important variable to include because there have been La Niña years that have had lots of snowfall. In our model, this will allow us to get a more accurate reading on the relationship between the ENSO Phase variable and our response. It can be considered a **mediator** variable.
+- **State:** This is an informational variable. The state is merely a proxy variable for the visit frequency. We only look at three states: California, Colorado, and New Mexico. These three states were chosen because they fall along the storm track of an El Niño phase, so they tend to receive the same storms.
+- **Visit Frequency:** This is another categorical predictor. The three states are each classified as either high or low visitor frequency. This variable was chosen because a region with more visitors is bound to have more avalanche incidents simply due to chance. In order to remove this noise, visit frequency was included as a variable.
 
-## Statistical Model Choice: 
+The following *Directed Acyclic Graph* depicts the relationship between all these variables:
 
-Generalized linear model using a Poisson distribution: our response variable is the fatal accident count, so it is an integer from 0 +n as n -> inf
+\![diagram]('/home/calvinfu/eds222/eds-222-finalproj/output/DAG.jpg')
+
+## Statistical Model Choice:
+
+Generalized linear model using a Poisson distribution: our response variable is the fatal accident count, so it is an integer from 0 +n as n -\> inf
 
 ## Analysis
 
-
 Load in the libraries and data:
+
 ```{r}
 # Read in libraries
 library(tidyverse)
 library(here)
 library(readxl)
+library(lubridate)
+library(sf)
+library(tmap)
 
 
 # Read in data and do basic cleaning
-avalanche_data <- read_excel(here("eds-222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx"))
+avalanche_data <- read_excel(here("eds-222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
+    filter(State %in% c("CA", "CO", "NM"))
 
-nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv"))
-colnames(nino_data) <- c("date", "sst_anomaly")
+# Add in ENSO data and add year columns
+nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv")) |> 
+    mutate(year = year(Date))
+colnames(nino_data) <- c("date", "sst_anomaly", "year")
+
+# Load in snow data and add year column
+co_snow <- read_csv(here("eds-222-finalproj/", "data", "aspen_snow_data.csv"), skip = 1) |> 
+    mutate(year = year(Date))
+ca_snow <- read_csv(here("eds-222-finalproj/", "data", "tahoe_snow_data.csv"), skip = 1) |> 
+    mutate(year = year(Date))
+nm_snow <- read_csv(here("eds-222-finalproj/", "data", "eagle_nest_snow_data.csv"), skip = 1) |> 
+    mutate(year = year(Date))
 ```
 
-
-
+## Limitations:
 
 ## References:
