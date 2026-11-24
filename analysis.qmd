@@ -1,6 +1,38 @@
-### Quarto document containing my analysis:
-Load in the libraries and data:
+# Header
 
+## Introduction:
+
+include background details and motivation
+
+## Question: 
+
+include your question, and how other variables play into the main relationship
+
+## Data:
+Information on all the variables:
+
+| Variable | Predictor or Response | Data Type | Discrete or Continuous | Values/Units |
+|---------------|---------------|---------------|---------------|---------------|
+| Fatal Avalanche Incidents | Response | integer | discrete | \[0, 1, 2, ...\] |
+| EL Nino Phase | Predictor | categorical | discrete | \["nino", "int", "nina"\] |
+| Average Snowfall | Predictor | double | continuous | xx.xx inches |
+| State | Predictor | categorical | discrete | \["CA","CO","NM"\] |
+| Visit Frequency | Predictor | categorical | discrete | \["High", "Low"\] |
+
+- Fatal Avalanche Incidents: This is our response variable. It is a count of how many incidents occurred in that year. Because it is a count, it is only integers, and it approximates a Poisson distribution.
+- El Niño Phase: This is our primary predictor. It is
+- Average Snowfall:
+- State:
+- Visit Frequency:
+
+## Statistical Model Choice: 
+
+Generalized linear model using a Poisson distribution: our response variable is the fatal accident count, so it is an integer from 0 +n as n -> inf
+
+## Analysis
+
+
+Load in the libraries and data:
 ```{r}
 # Read in libraries
 library(tidyverse)
@@ -15,21 +47,7 @@ nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv"))
 colnames(nino_data) <- c("date", "sst_anomaly")
 ```
 
-Some looking into the datasets:
 
-```{r}
-states <- unique(avalanche_data$State)
-print(states)
-```
 
-Brainstorm:
-I want to look at how el nino phase affects avalanche incidents. For the el nino phase I am going to look sea surface temperature anomaly because it is continuous. For snowfall I am going to look at snowfal total per year in inches.
 
-| Variable                  	| Predictor or Response 	| Data Type   	| Discrete or Continuous 	| Values/Units      	|
-|---------------------------	|-----------------------	|-------------	|------------------------	|-------------------	|
-| Fatal Avalanche Incidents 	| Response              	| integer     	| discrete               	| [0, 1, 2, ...]    	|
-| EL Nino Phase             	| Predictor             	| double      	| continuous             	| xx.xx sst anomaly 	|
-| Year                      	| Predictor             	| categorical 	| discrete               	| [19XX, ..., 2026] 	|
-| Average Snowfall          	| Predictor             	| double      	| continuous             	| xx.xx inches      	|
-| State                     	| Predictor             	| categorical 	| discrete               	| ["CA","CO","NM"]  	|
-| Skiers                    	| Predictor             	| categorical 	| discrete               	| ["High", "Low"]   	|
+## References:
