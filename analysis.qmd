@@ -44,12 +44,15 @@ nm_snow <- read_csv(here("eds-222-finalproj/", "data", "nm_snowfall_data.csv")) 
 
 ## Introduction:
 
-include background details and motivation
-talk about enso, make sur eyou define what an nino and nina phase 
+include background details and motivation talk about enso, make sure you define what an nino and nina phase
 
 ## Question:
 
-include your question, and how other variables play into the main relationship
+> ### Is the amount of avalanche-related fatalities in America positively correlated with El Nino cycles of ENSO?
+
+As stated earlier, it is the general consensus that El Niño cycles of ENSO tend to bring more precipitation and snow to the Sierras and the Rockies. However, more snow doesn't always mean that the risk of avalanches is higher. We briefly mentioned the general aspects that influence avalanches, such as snow pack, moisture content, etc. It is extremely hard to get information on snow conditions like that because most of that data is gathered individually or via extremely local agencies. Therefore, to account for other factors in the avalanche process, we have to look at a few other variables that can account for avalanche influences.  
+
+Distinguishing between different regions is very important, because snow type and visitor frequency can both change how many avalanches occur. A state such as Colorado, which receives far more alpine activity compared to a state like New Mexico, may have more avalanche incidents that are not influenced by ENSO, which has a chance of throwing off our statistical model. Additionally, snow type and total snowfall vary from state to state, even from the same storms, so it is very important to account for that.
 
 ## Data:
 
@@ -78,22 +81,24 @@ The following *Directed Acyclic Graph* depicts the relationship between all thes
 Generalized linear model using a Poisson distribution: our response variable is the fatal accident count, so it is an integer from 0 +n as n -\> inf
 
 ## Analysis
+
 For this analysis, it's very important that all this data is combined into one dataset. For ease of plotting and performing the generalized linear model, it is important the data is consolidated. The following is an example diagram showing how each row of the final DataFrame should look:
 
-| year | fatality_count | enso_phase | snow_in | state | visitors |
-|------|----------------|------------|---------|-------|----------|
-| 2023 | 14             | nino       | 715     | CA    | high     |
-| ...  | ...            | ...        | ...     | ...   | ...      |
+| year | state | fatality_count | avg_sst_anom | phase  | total_snow | visitors |
+|------|-------|----------------|--------------|--------|------------|----------|
+| 2023 | CA    | 8              | -0.83        | "nino" | 21.0       | high     |
+| ...  | ...   | ...            | ...          | ...    | ...        | ...      |
 
 Heres how we did that:
 
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
-#| output: false
+#| warning: false
 
 # Yearly sum of avalanche incidents per state
-year_av <- avalanche_data |> summarize(fatality_count = sum(Killed), .by = c(AvyYear, State))
+year_av <- avalanche_data |> summarize(fatality_count = sum(Killed), .by = c(AvyYear, State)) 
+colnames(year_av) <- c('year', 'state', 'fatality_count')
 
 # Yearly mean of ENSO data with classification of nino, nina. or int
 year_enso <- nino_data |>  
@@ -112,9 +117,31 @@ nm_snow$state <- "NM"
 year_snow <- ca_snow |>
     bind_rows(co_snow) |> 
     bind_rows(nm_snow) |> 
-    select(state, year, snow_inches) |> 
-    summarize(total_snow = sum(snow_inches), .by = c(year, state))
+    select(state, year, total_snowfall) |> 
+    summarize(total_snow = sum(total_snowfall), .by = c(year, state))
+
+# Combine the datasets into one dataset, add visitors columns
+avy_enso <- inner_join(year_av, year_enso, by = 'year') |>
+    inner_join(year_snow, by = c('year', 'state')) |> 
+    mutate(visitors = case_when(
+        state == "CO" ~ "high",
+        state == "CA" ~ "high",
+        .default = "low"
+    ))
+
+
+# Print the first row of the dataframe
+head(avy_enso, 1)
 ```
+
+As you can see, the final DataFrame output we have follows the pattern highlighted above. This means we can perform the generalized linear model that we discussed in the "Statistical Model Choice" section. Before we do that, however, it's important we visualize the raw data relationships between the predictor and response variables individually so we can understand the data better.
+
 ## Limitations:
+
+- Missing snow data for some years
+- Our dataset only kept data points that had data for all the columns
+- Snow data is only hisotircal data from one station in the state, not a good wholistic view of the state
+- Avalanche data is only from one source, would be nice to compile lots of data
+- visitor data is fixed, not continuous and per year
 
 ## References:
