@@ -6,9 +6,46 @@ Date: December 11, 2026
 
 Course: EDS 222: Statistics for Environmental Data Science
 
+Data and Package Loading:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| output: false
+
+# Read in libraries
+library(tidyverse)
+library(here)
+library(readxl)
+library(lubridate)
+library(sf)
+library(tmap)
+library(janitor)
+
+# Read in data, add year column, and do basic cleaning
+
+# Avalanche Data
+avalanche_data <- read_excel(here("eds-222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
+    filter(State %in% c("CA", "CO", "NM"))
+
+# ENSO Data and add year columns
+nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv")) |> 
+    mutate(year = year(Date))
+colnames(nino_data) <- c("date", "sst_anomaly", "year")
+
+# Snow Data
+co_snow <- read_csv(here("eds-222-finalproj/", "data", "co_snowfall_data.csv")) |> 
+    mutate(TotalSnowfall = as.numeric(TotalSnowfall)) |> clean_names()
+ca_snow <- read_csv(here("eds-222-finalproj/", "data", "ca_snowfall_data.csv")) |> 
+    mutate(TotalSnowfall = as.numeric(TotalSnowfall)) |> clean_names()
+nm_snow <- read_csv(here("eds-222-finalproj/", "data", "nm_snowfall_data.csv")) |> 
+    mutate(TotalSnowfall = as.numeric(TotalSnowfall)) |> clean_names()
+```
+
 ## Introduction:
 
 include background details and motivation
+talk about enso, make sur eyou define what an nino and nina phase 
 
 ## Question:
 
@@ -23,8 +60,8 @@ Information on all the variables:
 | Fatal Avalanche Incidents | Response | integer | discrete | \[0, 1, 2, ...\] |
 | EL Nino Phase | Predictor | categorical | discrete | \["nino", "int", "nina"\] |
 | Average Snowfall | Predictor | double | continuous | xx.xx inches |
-| State | Predictor | Informational | discrete | \["CA","CO","NM"\] |
-| Visit Frequency | Predictor | categorical | discrete | \["High", "Low"\] |
+| State | Predictor | Informational | discrete | \["CA", "CO", "NM"\] |
+| Visit Frequency | Predictor | categorical | discrete | \["high", "low"\] |
 
 - **Fatal Avalanche Incidents:** This is our response variable. It is a count of how many incidents occurred in that year. Because it is a count, it is only integers, and it approximates a Poisson distribution.
 - **ENSO Phase:** This is our primary predictor, and it is categorical. For our intents and purposes, we classify each year as either "La Nina", "Intermittent", or "El Nino" based on the Niño 3.4 Sea Surface Temperature Anomaly (SSTA) data. We determine the phase by taking the yearly average SSTA and classifying it based on that. This variable was chosen because it is our main predictor.
@@ -41,37 +78,43 @@ The following *Directed Acyclic Graph* depicts the relationship between all thes
 Generalized linear model using a Poisson distribution: our response variable is the fatal accident count, so it is an integer from 0 +n as n -\> inf
 
 ## Analysis
+For this analysis, it's very important that all this data is combined into one dataset. For ease of plotting and performing the generalized linear model, it is important the data is consolidated. The following is an example diagram showing how each row of the final DataFrame should look:
 
-Load in the libraries and data:
+| year | fatality_count | enso_phase | snow_in | state | visitors |
+|------|----------------|------------|---------|-------|----------|
+| 2023 | 14             | nino       | 715     | CA    | high     |
+| ...  | ...            | ...        | ...     | ...   | ...      |
+
+Heres how we did that:
 
 ```{r}
-# Read in libraries
-library(tidyverse)
-library(here)
-library(readxl)
-library(lubridate)
-library(sf)
-library(tmap)
+#| code-fold: true
+#| code-summary: "Show the code"
+#| output: false
 
+# Yearly sum of avalanche incidents per state
+year_av <- avalanche_data |> summarize(fatality_count = sum(Killed), .by = c(AvyYear, State))
 
-# Read in data and do basic cleaning
-avalanche_data <- read_excel(here("eds-222-finalproj", "data", "CAIC_Accident_Data_Oct_2025.xlsx")) |> 
-    filter(State %in% c("CA", "CO", "NM"))
+# Yearly mean of ENSO data with classification of nino, nina. or int
+year_enso <- nino_data |>  
+    summarize(avg_sst_anm = mean(sst_anomaly), .by = year) |>
+    mutate(phase = case_when(
+        avg_sst_anm >= 0.5 ~ "nino",
+        avg_sst_anm <= -0.5 ~ "nina",
+        .default = "int"
+    ))
 
-# Add in ENSO data and add year columns
-nino_data <- read_csv(here("eds-222-finalproj", "data", "nino34.long.anom.csv")) |> 
-    mutate(year = year(Date))
-colnames(nino_data) <- c("date", "sst_anomaly", "year")
+# Yearly sum of snowfall at each location
+ca_snow$state <- "CA"
+co_snow$state <- "CO"
+nm_snow$state <- "NM"
 
-# Load in snow data and add year column
-co_snow <- read_csv(here("eds-222-finalproj/", "data", "aspen_snow_data.csv"), skip = 1) |> 
-    mutate(year = year(Date))
-ca_snow <- read_csv(here("eds-222-finalproj/", "data", "tahoe_snow_data.csv"), skip = 1) |> 
-    mutate(year = year(Date))
-nm_snow <- read_csv(here("eds-222-finalproj/", "data", "eagle_nest_snow_data.csv"), skip = 1) |> 
-    mutate(year = year(Date))
+year_snow <- ca_snow |>
+    bind_rows(co_snow) |> 
+    bind_rows(nm_snow) |> 
+    select(state, year, snow_inches) |> 
+    summarize(total_snow = sum(snow_inches), .by = c(year, state))
 ```
-
 ## Limitations:
 
 ## References:
