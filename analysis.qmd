@@ -12,9 +12,11 @@ Data and Package Loading:
 #| code-fold: true
 #| code-summary: "Show the code"
 #| output: false
+#| warning: false
 
 # Read in libraries
 library(tidyverse)
+source("/home/calvinfu/eds222/eds-222-finalproj/R/theme_mountain.R")
 library(here)
 library(readxl)
 library(lubridate)
@@ -136,11 +138,81 @@ head(avy_enso, 1)
 
 As you can see, the final DataFrame output we have follows the pattern highlighted above. This means we can perform the generalized linear model that we discussed in the "Statistical Model Choice" section. Before we do that, however, it's important we visualize the raw data relationships between the predictor and response variables individually so we can understand the data better.
 
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| warning: false
+
+# Visulize the raw data: Avalanche vs snow and enso phase
+avy_enso |> ggplot(
+    aes(x=total_snow, y=fatality_count, color = phase)
+    ) +
+    geom_point(
+    position = position_jitter(height = 0.1, width = 0),
+    size = 4
+    ) +
+    labs(
+        x= "Yearly Snow Totals (Inches)",
+        y= "Yearly Fatality Count",
+        title= "Yearly Fatality Counts vs. Snow Total and ENSO Phase"
+    )
+```
+
+Each point represents one year for each state. The same year is likely repeated three times, but for each state. From this visualization, it is hard to determine any significant relationship between the data points. There seems to be a relatively weak positive trend in the data, meaning that there **may** be an increase in avalanche fatalities as the yearly snow total increases. However, there is an interesting pattern in the three data points that are at the 8 fatality counts. For each of the phases there is one year that had 8 fatalities. Additionaly, contrary to popular belief, the 8-fatality year that had the least snow was an El Nino year, and the 8-fatality year that had the most snow was a La Nina year.
+
+For the next visualization, we are going to color code the relationship with the state each data point, so that we can see if the region has someting to do with the yearly snow total and yearly fatality counts.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| warning: false
+
+# Visulize the raw data: Avalanche vs snow and state
+avy_enso |> ggplot(
+    aes(x=total_snow, y=fatality_count, color = state)
+    ) +
+    geom_point(
+    position = position_jitter(height = 0.1, width = 0),
+    size = 4
+    ) +
+    labs(
+        x= "Yearly Snow Totals (Inches)",
+        y= "Yearly Fatality Count",
+        title= "Yearly Fatality Counts vs. Snow Total and State"
+    )
+```
+
+This visialization shows a much clearer relationship between the variabels. All the points with the most yearly snow (in inches) are in Colorado. Relating this back to the three 8-fatality years that we discussed in the previous section, we have a bit more information to explain the relationship. For the high fatality El Nino year, it was in California and was a high snow year for that state group. However, for the other two points that were in Colorado, it still seems like the La nina year had more snow.
+
+If we look at the color coding of the data points in the first graph, there is a lot more points that are labeled as "int", meaning they are an intermitten phase of ENSO. However, as mentioned above, intermitten phases of ENSO can lean toards one side of the spectrum. Therefore, I think its a good idea to visualise the relationship between the average sea surface temperature (sst)anomaly in the Nino 3.4 region with the average snowfall per year to see if intermitten years receive more snow depending on how far "leaning" they are.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| warning: false
+
+# Visulize the raw data: Avalanche vs snow and state
+avy_enso |> ggplot(
+    aes(x=avg_sst_anm, y=total_snow)
+    ) +
+    geom_point(
+    position = position_jitter(height = 0.1, width = 0),
+    size = 4
+    ) +
+    labs(
+        x= "Nino 3.4 SST Anomaly (°C)",
+        y= "Yearly Snow Total (inches)",
+        title= "Yearly Snow Totals vs ENSO Phase"
+    )
+```
+*note* look at simpsons paradox
+
+
 ## Limitations:
 
 - Missing snow data for some years
 - Our dataset only kept data points that had data for all the columns
-- Snow data is only hisotircal data from one station in the state, not a good wholistic view of the state
+- Snow data is only historical data from one station in the state, not a good holistic view of the state
 - Avalanche data is only from one source, would be nice to compile lots of data
 - visitor data is fixed, not continuous and per year
 
