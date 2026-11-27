@@ -23,6 +23,7 @@ library(lubridate)
 library(sf)
 library(tmap)
 library(janitor)
+library(patchwork)
 
 # Read in data, add year column, and do basic cleaning
 
@@ -63,15 +64,16 @@ Information on all the variables:
 | Variable | Predictor or Response | Data Type | Discrete or Continuous | Values/Units |
 |---------------|---------------|---------------|---------------|---------------|
 | Fatal Avalanche Incidents | Response | integer | discrete | \[0, 1, 2, ...\] |
-| EL Nino Phase | Predictor | categorical | discrete | \["nino", "int", "nina"\] |
-| Average Snowfall | Predictor | double | continuous | xx.xx inches |
-| State | Predictor | Informational | discrete | \["CA", "CO", "NM"\] |
-| Visit Frequency | Predictor | categorical | discrete | \["high", "low"\] |
+| EL Nino Phase | Predictor | string or float | discrete or continuous | \["nino", "int", "nina"\] or xx.xx °C |
+| Average Snowfall | Predictor | float | continuous | xx.xx inches |
+| State | Predictor | string | string | \["CA", "CO", "NM"\] |
+| Visit Frequency | Predictor | string | discrete | \["high", "low"\] |
 
 - **Fatal Avalanche Incidents:** This is our response variable. It is a count of how many incidents occurred in that year. Because it is a count, it is only integers, and it approximates a Poisson distribution.
 - **ENSO Phase:** This is our primary predictor, and it is categorical. For our intents and purposes, we classify each year as either "La Nina", "Intermittent", or "El Nino" based on the Niño 3.4 Sea Surface Temperature Anomaly (SSTA) data. We determine the phase by taking the yearly average SSTA and classifying it based on that. This variable was chosen because it is our main predictor.
+  - THe ENSO phase can also be expressed
 - **Average Snowfall:** This is our only continuous predictor. It is a yearly average of snowfall for the state that we calculate based on snowfall averages at one weather station per state. Snowfall ebbs and flows just as much as the ENSO phase does. This is an important variable to include because there have been La Niña years that have had lots of snowfall. In our model, this will allow us to get a more accurate reading on the relationship between the ENSO Phase variable and our response. It can be considered a **mediator** variable.
-- **State:** This is an informational variable. The state is merely a proxy variable for the visit frequency. We only look at three states: California, Colorado, and New Mexico. These three states were chosen because they fall along the storm track of an El Niño phase, so they tend to receive the same storms.
+- **State:** This is an categorical variable. Each state has different weather patterns that occure when the same storms passes over them. We only look at three states: California, Colorado, and New Mexico. These three states were chosen because they fall along the storm track of an El Niño phase, so they tend to receive the same storms.
 - **Visit Frequency:** This is another categorical predictor. The three states are each classified as either high or low visitor frequency. This variable was chosen because a region with more visitors is bound to have more avalanche incidents simply due to chance. In order to remove this noise, visit frequency was included as a variable.
 
 The following *Directed Acyclic Graph* depicts the relationship between all these variables:
@@ -182,18 +184,32 @@ avy_enso |> ggplot(
     )
 ```
 
-This visialization shows a much clearer relationship between the variabels. All the points with the most yearly snow (in inches) are in Colorado. Relating this back to the three 8-fatality years that we discussed in the previous section, we have a bit more information to explain the relationship. For the high fatality El Nino year, it was in California and was a high snow year for that state group. However, for the other two points that were in Colorado, it still seems like the La nina year had more snow.
+This visualization shows a much clearer relationship between the variabels. All the points with the most yearly snow (in inches) are in Colorado. Relating this back to the three 8-fatality years that we discussed in the previous section, we have a bit more information to explain the relationship. For the high fatality El Nino year, it was in California and was a high snow year for that state group. However, for the other two points that were in Colorado, it still seems like the La nina year had more snow.
 
-If we look at the color coding of the data points in the first graph, there is a lot more points that are labeled as "int", meaning they are an intermitten phase of ENSO. However, as mentioned above, intermitten phases of ENSO can lean toards one side of the spectrum. Therefore, I think its a good idea to visualise the relationship between the average sea surface temperature (sst)anomaly in the Nino 3.4 region with the average snowfall per year to see if intermitten years receive more snow depending on how far "leaning" they are.
+If we look at the color coding of the data points in the first graph, there is a lot more points that are labeled as "int", meaning they are an intermitten phase of ENSO. However, as mentioned above, intermitten phases of ENSO can lean toards one side of the spectrum. Therefore, I think its a good idea to visualise the relationship between the average sea surface temperature (sst) anomaly in the Nino 3.4 region with the average snowfall per year to see if intermitten years receive more snow depending on how far "leaning" they are.
 
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
 #| warning: false
 
-# Visulize the raw data: Avalanche vs snow and state
-avy_enso |> ggplot(
+# Visulize the raw data: Avalanche vs snow vs Avalanche vs snow and state
+p1 <- avy_enso |> ggplot(
     aes(x=avg_sst_anm, y=total_snow)
+    ) +
+    geom_point(
+    position = position_jitter(height = 0.1, width = 0),
+    size = 4,
+    color = 'grey'
+    ) +
+    labs(
+        x= "Nino 3.4 SST Anomaly (°C)",
+        y= "Yearly Snow Total (inches)",
+        title= "Yearly Snow Totals vs ENSO Phase"
+    )
+
+p2 <- avy_enso |> ggplot(
+    aes(x=avg_sst_anm, y=total_snow, color = state)
     ) +
     geom_point(
     position = position_jitter(height = 0.1, width = 0),
@@ -202,11 +218,100 @@ avy_enso |> ggplot(
     labs(
         x= "Nino 3.4 SST Anomaly (°C)",
         y= "Yearly Snow Total (inches)",
-        title= "Yearly Snow Totals vs ENSO Phase"
+        title= "Yearly Snow Totals vs ENSO Phase Including State"
     )
+p1 + p2
 ```
-*note* look at simpsons paradox
 
+Looking at this graph, a relationship becomes very apparent to us. If we were to simply look at the relationship between Nino 3.4 SST Anomaly and the Yearly Snow Total on its own, without accounting for state, we would find it very had to see a relationship. Once we account for the state, the relationship between these two variables becomes much much clearer. This is a great example of Simpson's paradox. Simpson's paradox is a statistical phenomenon where a trend between two variables disappears or reverses when the data is not grouped. This is exacly what we just observed. There is clearly an interaction between state and the relationship between the yearly snow totals. This is likely something we will want to look at when creating our generalized linear models.
+
+#### Generalized Linear Models and ANOVA:
+
+By simply looking at our dataset and the number of variables that we have, it is very clear that we have to be very strategic with the addition of variables into out dataset. Our final, clean dataset has only 67 years of data. This means that the degrees of freedom of our dataset is **extremely** important, and we may have to leave out some of our variables in order to have a more accurate final model.
+
+As we just discovered, the state in which the data comes from is extremely important, because it has an interaction with the yearly snow totals and the ENSO phase. Therefore, the variable we have that is least important is the "visitors" data. First, we are going to perform a generalized linear model on the data **without** including the `visitors` variable. Then I am going to repeat the generalized linear model including the `visitors` variable. Then we will interpret the results and determine if we should keep the variable in our final model.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| warning: false
+# Perform GLM without visitors
+region_glm <- glm(
+    fatality_count ~ avg_sst_anm + total_snow,
+    family = poisson(link = "log"),
+    data = avy_enso
+)
+
+# Perform GLM with visitors
+visitors_glm <- glm(
+    fatality_count ~ avg_sst_anm + total_snow + visitors,
+    family = poisson(link = "log"),
+    data = avy_enso
+)
+
+# Print Coefficients
+print('GLM without visitor data')
+print(summary(region_glm))
+print('GLM with visitor data')
+print(summary(visitors_glm))
+
+# ANOVA Test
+print('ANOVA test results:')
+anova(region_glm, visitors_glm)
+```
+
+Because this is a generalized linear model, the ANOVA test tests deviance and uses the Chi-Square statistic, not the F statistic. The hypotheses for our ANOVA test are:
+
+$H_0$: Visitor rate has no effect on the relationship between yearly fatality count and ENSO cycle
+
+$H_A$: Visitor rate has an effect on the relationship between yearly fatality count and ENSO cycle
+
+Our ANOVA p-value was 0.1401. This means that, assuming there is no effect of visitor rate on the relationship between fatality count and ENSO cycle, we would observe yearly fatality counts this high or greater 12.94% of the time. This is **NOT** a significant p-value, and therefore we fail to reject the null hypothesis. What this means for us, moving forward in the analysis, is that we are going to not include `visitors` in the final model.
+
+#### Interactive Generalized Model Testing:
+
+In the previous data exploration, we discovered an interaction between the state and yearly snow total variables. In order to determine if we are going to include state as an additive variable, or interactive variable, we are going to perform another ANOVA test. This time, the two models will be with `state` as an additive variable, and `state` as an interactive variable with `total_snow`.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+#| warning: false
+
+# Perform glm with state as additive variable
+additive_glm <- glm(
+    fatality_count ~ avg_sst_anm + total_snow + state,
+    family = poisson(link = "log"),
+    data = avy_enso
+)
+
+# Perform glm with state as interactive variable
+interactive_glm <- glm(
+    fatality_count ~ avg_sst_anm + state*total_snow,
+    family = poisson(link = "log"),
+    data = avy_enso
+)
+# Print coefficients
+print('Additive GLM')
+print(summary(additive_glm))
+print('Interactive GLM')
+print(summary(interactive_glm))
+
+# ANOVA test
+print('ANOVA test results:')
+anova(additive_glm, interactive_glm)
+```
+
+Again, the ANOVA test between two generalized linear models looks at deviance rather than variance. The hypotheses for this ANOVA test are:
+
+$H_0$: The interaction between `state` and `total_snow` does not affect the model
+
+$H_A$: The interaction between `state` and `total_snow` does affect the model
+
+Our ANOVA test p-value is 0.6742. This is a very very high p-value. Essentially, this means that the interaction between `state`and `total_snow` does **NOT** explain more deviance in the data compared to the additive model. We fail to reject the null hypothesis. Therefore, it is safe to say that for the final model we are not going to include the interaction between `state` and `total_snow`.
+
+#### Our Final Model:
+
+note: show final model, print its summary, write conclusion about how ENSO is super complicated and this problem would require much more data and analysis
 
 ## Limitations:
 
@@ -217,3 +322,5 @@ avy_enso |> ggplot(
 - visitor data is fixed, not continuous and per year
 
 ## References:
+
+Claude for making the theme (is this okay or will I get marked down for this)
